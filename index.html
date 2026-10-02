@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PulseAI — ИИ Ассистент</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Marked.js for Rich Markdown & Math/Code formatting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        pulse: {
+                            50: '#f0f4ff',
+                            cyan: '#00f2fe',
+                            violet: '#a855f7',
+                            dark: '#080B11',
+                            card: '#121824',
+                            border: '#1E293B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #080B11;
+            color: #F3F4F6;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            touch-action: manipulation;
+        }
+
+        /* Glassmorphism elements */
+        .glass-panel {
+            background: rgba(18, 24, 36, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-input {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glass-input:focus {
+            border-color: #00f2fe;
+            box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #00f2fe 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-btn {
+            background: linear-gradient(135deg, #00f2fe 0%, #7928ca 100%);
+            transition: all 0.2s ease;
+        }
+        .gradient-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 9999px;
+        }
+
+        /* Code Block Styling */
+        pre code {
+            background-color: #0d1117;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            display: block;
+            overflow-x: auto;
+            color: #e6edf3;
+            font-family: monospace;
+            font-size: 0.75rem;
+            border: 1px solid #30363d;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        code:not(pre code) {
+            background-color: rgba(110, 118, 129, 0.2);
+            padding: 0.15rem 0.35rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #38bdf8;
+        }
+
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+            font-size: 0.75rem;
+        }
+
+        .prose th, .prose td {
+            border: 1px solid #334155;
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+        }
+
+        .prose th {
+            background-color: #1e293b;
+            color: #38bdf8;
+        }
+
+        /* Mobile full height layout fix */
+        .app-height {
+            height: 100vh;
+            height: 100dvh;
+        }
+    </style>
+</head>
+<body class="app-height flex flex-col antialiased selection:bg-purple-500 selection:text-white overflow-hidden">
+
+    <!-- TOP MOBILE HEADER -->
+    <header class="shrink-0 glass-panel border-b border-slate-800/80 px-4 py-3 z-30 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 p-[2px] flex items-center justify-center shadow-lg shadow-cyan-500/10">
+                <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-cyan-400 text-base"></i>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                    <span class="text-base font-extrabold tracking-wide text-slate-100">PulseAI</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <span class="text-[10px] text-slate-400 font-medium">Многоязычный ИИ (Any Language)</span>
+            </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center gap-2">
+            <button onclick="toggleModeMenu()" id="modeBtn" class="px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-[11px] font-semibold text-cyan-300 flex items-center gap-1.5 active:bg-slate-700">
+                <i class="fa-solid fa-bolt text-cyan-400"></i>
+                <span id="currentModeLabel">Чат</span>
+            </button>
+
+            <button onclick="clearChatHistory()" class="w-9 h-9 rounded-xl bg-slate-800/60 text-slate-400 hover:text-slate-200 flex items-center justify-center active:scale-95 transition" title="Очистить чат">
+                <i class="fa-solid fa-trash-can text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- QUICK MODE SELECTOR POPUP -->
+    <div id="modeMenu" class="hidden absolute top-14 right-4 z-40 glass-panel rounded-2xl p-2 w-52 shadow-2xl flex flex-col gap-1 border border-slate-700">
+        <button onclick="setMode('chat', 'Чат')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2.5">
+            <i class="fa-solid fa-message text-cyan-400 w-4"></i>
+            <span>Умный Диалог</span>
+        </button>
+        <button onclick="setMode('vision', 'Анализ Фото')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2.5">
+            <i class="fa-solid fa-camera text-purple-400 w-4"></i>
+            <span>Анализ Изображений</span>
+        </button>
+        <button onclick="setMode('gen_img', 'Генерация Артов')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2.5">
+            <i class="fa-solid fa-wand-magic-sparkles text-pink-400 w-4"></i>
+            <span>Сгенерировать Картинку</span>
+        </button>
+    </div>
+
+    <!-- MAIN CHAT SCROLL MESSAGES AREA -->
+    <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-3xl mx-auto w-full">
+        
+        <!-- Welcome Message -->
+        <div class="flex items-start gap-3 max-w-[90%]">
+            <div class="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-sparkles text-purple-400 text-xs"></i>
+            </div>
+            <div class="glass-panel rounded-2xl rounded-tl-none p-4 text-xs text-slate-200 leading-relaxed space-y-2 border border-slate-800 shadow-lg">
+                <p class="font-bold text-slate-100 text-sm">Привет / Hello / Салам! Я твой ИИ-помощник.</p>
+                <p class="text-slate-300">Я говорю на всех языках мира. Напиши мне на любом языке, и я отвечу на нём же:</p>
+                <ul class="list-disc list-inside text-slate-400 space-y-1 text-[11px]">
+                    <li>🌐 <strong>Любые языки мира</strong> (English, Русский, Қазақша, O'zbekcha, Deutsch, Español, 中文...)</li>
+                    <li>📷 Распознавание и анализ фотографий</li>
+                    <li>🎤 Голосовой ввод и озвучивание ответов</li>
+                    <li>🎨 Генерация картинок по текстовому описанию</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quick Actions Prompt Chips -->
+        <div id="quickChips" class="flex flex-wrap gap-2 py-2">
+            <button onclick="usePromptChip('How does artificial intelligence work? Explain briefly.')" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300 hover:border-cyan-500/50 active:scale-95 transition">
+                🌐 English: How AI works?
+            </button>
+            <button onclick="usePromptChip('Болашақ технологиялар туралы қысқаша айтып бер')" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300 hover:border-purple-500/50 active:scale-95 transition">
+                🇰🇿 Қазақша: Болашақ
+            </button>
+            <button onclick="usePromptChip('Сгенерируй красивый космический пейзаж')" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300 hover:border-pink-500/50 active:scale-95 transition">
+                🎨 Нарисуй космос
+            </button>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM FIXED INPUT CONTAINER -->
+    <footer class="shrink-0 glass-panel border-t border-slate-800/80 p-3 z-30 max-w-3xl mx-auto w-full">
+        
+        <!-- Attached File Preview -->
+        <div id="attachmentPreview" class="hidden mb-2 relative p-2 bg-slate-950/90 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <img id="attachedImagePreview" class="hidden w-12 h-12 object-cover rounded-lg border border-slate-700">
+                <div id="attachedAudioBadge" class="hidden flex items-center gap-2 text-xs text-pink-400 font-medium px-2 py-1 bg-pink-500/10 rounded-lg">
+                    <i class="fa-solid fa-microphone"></i>
+                    <span id="audioBadgeText">Записан голос</span>
+                </div>
+            </div>
+            <button onclick="clearAttachment()" class="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Main Input Bar -->
+        <div class="flex items-center gap-2">
+            
+            <!-- Attach Photo / Camera Button -->
+            <label class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-cyan-400 active:scale-95 cursor-pointer transition shrink-0" title="Прикрепить фото">
+                <i class="fa-regular fa-image text-base"></i>
+                <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageSelection(event)">
+            </label>
+
+            <!-- Voice Record Button -->
+            <button id="micBtn" onclick="toggleVoiceRecording()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-pink-400 active:scale-95 transition shrink-0" title="Голосовое сообщение">
+                <i class="fa-solid fa-microphone text-base"></i>
+            </button>
+
+            <!-- Text Area Input -->
+            <div class="flex-1 relative">
+                <textarea id="userInput" rows="1" placeholder="Задайте вопрос..." 
+                          onkeydown="handleKeyDown(event)"
+                          oninput="autoResizeTextarea(this)"
+                          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 resize-none max-h-28 leading-relaxed"></textarea>
+            </div>
+
+            <!-- Send Action Button -->
+            <button onclick="sendMessage()" class="gradient-btn w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // State Management
+        const state = {
+            currentMode: 'chat', // 'chat', 'vision', 'gen_img'
+            attachedBase64Image: null,
+            attachedAudioBlob: null,
+            mediaRecorder: null,
+            audioChunks: [],
+            isRecording: false,
+            isGenerating: false,
+            conversationHistory: [] // Maintains chat memory for rich continuous context
+        };
+
+        // Configure Marked Renderer
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+        }
+
+        // DOM Elements
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const attachmentPreview = document.getElementById('attachmentPreview');
+        const attachedImagePreview = document.getElementById('attachedImagePreview');
+        const attachedAudioBadge = document.getElementById('attachedAudioBadge');
+
+        // Toggle Mode Menu
+        function toggleModeMenu() {
+            const menu = document.getElementById('modeMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function setMode(mode, label) {
+            state.currentMode = mode;
+            document.getElementById('currentModeLabel').innerText = label;
+            document.getElementById('modeMenu').classList.add('hidden');
+            
+            if (mode === 'gen_img') {
+                userInput.placeholder = "Опишите желаемое изображение в деталях...";
+            } else if (mode === 'vision') {
+                userInput.placeholder = "Прикрепите фото и задайте вопрос...";
+            } else {
+                userInput.placeholder = "Задайте вопрос...";
+            }
+        }
+
+        // Auto-expand textarea
+        function autoResizeTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Prompt Chips Selector
+        function usePromptChip(text) {
+            userInput.value = text;
+            sendMessage();
+            const chips = document.getElementById('quickChips');
+            if (chips) chips.style.display = 'none';
+        }
+
+        // Helper to convert Blob to base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // Sanitize conversation history to enforce alternating user/model roles
+        function sanitizeHistory(history) {
+            const clean = [];
+            for (const msg of history) {
+                if (!msg || !msg.role || !Array.isArray(msg.parts) || msg.parts.length === 0) continue;
+                const lastMsg = clean[clean.length - 1];
+                if (!lastMsg) {
+                    if (msg.role === 'user') clean.push(msg);
+                } else if (lastMsg.role !== msg.role) {
+                    clean.push(msg);
+                } else if (msg.role === 'user' && lastMsg.role === 'user') {
+                    clean[clean.length - 1] = msg; // Replace with most recent user prompt
+                }
+            }
+            if (clean.length > 0 && clean[clean.length - 1].role !== 'user') {
+                clean.pop();
+            }
+            return clean.length > 0 ? clean : [history[history.length - 1]];
+        }
+
+        // Robust Fetch With Exponential Backoff Retry Logic
+        async function fetchWithRetry(url, options, maxRetries = 2) {
+            let delay = 500;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data?.candidates?.[0]?.content?.parts?.length > 0) {
+                            return data;
+                        }
+                    } else {
+                        const errText = await response.text();
+                        console.warn(`API returned status ${response.status}:`, errText);
+                    }
+                } catch (err) {
+                    console.warn(`Attempt ${i + 1} failed, retrying...`, err);
+                }
+                if (i < maxRetries - 1) {
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 1.5;
+                }
+            }
+            return null;
+        }
+
+        // Handle Image Attachment
+        function handleImageSelection(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                state.attachedBase64Image = evt.target.result;
+                attachmentPreview.classList.remove('hidden');
+                attachedImagePreview.src = evt.target.result;
+                attachedImagePreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Voice Recording Toggle
+        async function toggleVoiceRecording() {
+            const micBtn = document.getElementById('micBtn');
+
+            if (!state.isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    state.mediaRecorder = new MediaRecorder(stream);
+                    state.audioChunks = [];
+
+                    state.mediaRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) state.audioChunks.push(e.data);
+                    };
+
+                    state.mediaRecorder.onstop = () => {
+                        state.attachedAudioBlob = new Blob(state.audioChunks, { type: 'audio/webm' });
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                        attachmentPreview.classList.remove('hidden');
+                        attachedAudioBadge.classList.remove('hidden');
+                    };
+
+                    state.mediaRecorder.start();
+                    state.isRecording = true;
+                    micBtn.classList.add('text-red-500', 'bg-red-500/10', 'animate-pulse');
+                } catch (err) {
+                    alert('Ошибка доступа к микрофону: ' + err.message);
+                }
+            } else {
+                if (state.mediaRecorder) state.mediaRecorder.stop();
+                state.isRecording = false;
+                micBtn.classList.remove('text-red-500', 'bg-red-500/10', 'animate-pulse');
+            }
+        }
+
+        // Clear Attachments
+        function clearAttachment() {
+            state.attachedBase64Image = null;
+            state.attachedAudioBlob = null;
+            attachmentPreview.classList.add('hidden');
+            attachedImagePreview.classList.add('hidden');
+            attachedAudioBadge.classList.add('hidden');
+            document.getElementById('imageInput').value = '';
+        }
+
+        // Send Message Handler
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text && !state.attachedBase64Image && !state.attachedAudioBlob) return;
+            if (state.isGenerating) return;
+
+            state.isGenerating = true;
+
+            // Render User Message
+            renderUserMessage(text, state.attachedBase64Image, state.attachedAudioBlob);
+
+            // Save copies before clearing
+            const textPrompt = text;
+            const base64Img = state.attachedBase64Image;
+            const audioBlob = state.attachedAudioBlob;
+            const isImageGen = state.currentMode === 'gen_img' || textPrompt.toLowerCase().startsWith('нарисуй') || textPrompt.toLowerCase().startsWith('сгенерируй');
+
+            // Reset inputs
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            clearAttachment();
+
+            // Hide initial prompt chips if present
+            const chips = document.getElementById('quickChips');
+            if (chips) chips.style.display = 'none';
+
+            // Show AI Loading Placeholder
+            const loadingId = renderAILoading();
+
+            try {
+                if (isImageGen) {
+                    const generatedImgUrl = await generateAIImageAPI(textPrompt || "Красивый футуристический арт");
+                    removeAILoading(loadingId);
+                    if (generatedImgUrl) {
+                        renderAIMessage("Вот сгенерированное изображение по вашему запросу:", generatedImgUrl);
+                    } else {
+                        renderAIMessage("Не удалось сгенерировать картинку. Попробуйте изменить описание запроса.");
+                    }
+                } else {
+                    const aiResponseText = await callGeminiAPI(textPrompt, base64Img, audioBlob);
+                    removeAILoading(loadingId);
+                    
+                    // Immediately render text answer
+                    renderAIMessage(aiResponseText, null, null);
+
+                    // Asynchronously attempt TTS audio without blocking text UI
+                    if (aiResponseText && aiResponseText.length > 0) {
+                        generateTTSAudioAPI(aiResponseText.substring(0, 200)).then(ttsUrl => {
+                            if (ttsUrl) {
+                                attachTTSToLastMessage(ttsUrl);
+                            }
+                        }).catch(e => console.warn("TTS audio failed silently:", e));
+                    }
+                }
+            } catch (err) {
+                console.error("Error sending message:", err);
+                removeAILoading(loadingId);
+                renderAIMessage("Пожалуйста, напишите запрос ещё раз.");
+            } finally {
+                state.isGenerating = false;
+            }
+        }
+
+        // Attach TTS audio control dynamically to the latest AI message
+        function attachTTSToLastMessage(ttsUrl) {
+            const lastMsg = chatContainer.lastElementChild;
+            if (lastMsg) {
+                const panel = lastMsg.querySelector('.glass-panel');
+                if (panel && !panel.querySelector('audio')) {
+                    const audioDiv = document.createElement('div');
+                    audioDiv.className = 'pt-2 border-t border-slate-800 flex items-center gap-2';
+                    audioDiv.innerHTML = `
+                        <i class="fa-solid fa-volume-high text-cyan-400 text-xs"></i>
+                        <audio controls src="${ttsUrl}" class="h-6 w-full max-w-xs"></audio>
+                    `;
+                    panel.appendChild(audioDiv);
+                }
+            }
+        }
+
+        // Render User Message UI
+        function renderUserMessage(text, imageBase64, audioBlob) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'flex items-start gap-2.5 justify-end max-w-[88%] ml-auto';
+            
+            let audioHtml = '';
+            if (audioBlob) {
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioHtml = `
+                    <div class="flex items-center gap-2 pt-1">
+                        <i class="fa-solid fa-microphone text-pink-300"></i>
+                        <audio controls src="${audioUrl}" class="h-6 w-44"></audio>
+                    </div>
+                `;
+            }
+
+            msgDiv.innerHTML = `
+                <div class="bg-gradient-to-r from-cyan-600 to-indigo-600 rounded-2xl rounded-tr-none p-3.5 text-xs text-white leading-relaxed space-y-2 shadow-md">
+                    ${imageBase64 ? `<img src="${imageBase64}" class="max-h-52 rounded-xl object-cover w-full border border-white/20">` : ''}
+                    ${text ? `<p class="whitespace-pre-wrap">${escapeHtml(text)}</p>` : ''}
+                    ${audioHtml}
+                </div>
+            `;
+            chatContainer.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        // Render AI Message UI
+        function renderAIMessage(text, generatedImageUrl = null, ttsAudioUrl = null) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'flex items-start gap-2.5 max-w-[92%]';
+
+            msgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-sparkles text-purple-400 text-xs"></i>
+                </div>
+                <div class="glass-panel rounded-2xl rounded-tl-none p-3.5 text-xs text-slate-200 leading-relaxed border border-slate-800 space-y-2.5 shadow-lg w-full overflow-hidden">
+                    ${text ? `<div class="prose prose-invert text-xs leading-relaxed overflow-x-auto">${formatText(text)}</div>` : ''}
+                    ${generatedImageUrl ? `<img src="${generatedImageUrl}" class="max-h-72 w-full object-cover rounded-xl border border-slate-700 shadow-md">` : ''}
+                    ${ttsAudioUrl ? `
+                        <div class="pt-2 border-t border-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-volume-high text-cyan-400 text-xs"></i>
+                            <audio controls src="${ttsAudioUrl}" class="h-6 w-full max-w-xs"></audio>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            chatContainer.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        // Gemini API Calls with Context Memory & Retries + Auto-Recovery
+        async function callGeminiAPI(prompt = "", base64Image = null, audioBlob = null) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const userParts = [];
+            if (prompt) {
+                userParts.push({ text: prompt });
+            }
+
+            if (base64Image) {
+                const base64Data = base64Image.split(',')[1] || base64Image;
+                userParts.push({
+                    inlineData: {
+                        mimeType: "image/png",
+                        data: base64Data
+                    }
+                });
+            }
+
+            if (audioBlob) {
+                const audioBase64 = await blobToBase64(audioBlob);
+                const mimeType = (audioBlob.type || "audio/webm").split(';')[0];
+                userParts.push({
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: audioBase64
+                    }
+                });
+            }
+
+            if (userParts.length === 0) {
+                userParts.push({ text: "Привет! Ответь мне." });
+            }
+
+            const currentTurn = { role: 'user', parts: userParts };
+            
+            // Clean history sequence so roles alternate strictly (user, model, user, model)
+            // Replace image/audio data in previous turns with brief text labels to avoid payload overflow
+            const sanitizedHistory = sanitizeHistory([...state.conversationHistory, currentTurn]).map((msg, index, arr) => {
+                if (index === arr.length - 1) return msg; // Keep current turn fully intact
+                if (msg.role === 'user') {
+                    const textParts = msg.parts.filter(p => p.text).map(p => p.text);
+                    return {
+                        role: 'user',
+                        parts: [{ text: textParts.join('\n') || "[Вложение пользователя]" }]
+                    };
+                }
+                return msg;
+            });
+
+            const systemInstruction = {
+                parts: [{ text: "Ты — PulseAI, сверхинтеллектуальный, быстрый и многоязычный ИИ-ассистент последнего поколения.\n\n" +
+                    "1. МНОГОЯЗЫЧНОСТЬ (Multi-Lingual Auto-Detect):\n" +
+                    "ВСЕГДА отвечай СТРОГО НА ТОМ ЖЕ ЯЗЫКЕ, на котором написал или сказал пользователь (Русский, English, Қазақша, O'zbekcha, Deutsch, Español, Français, 中文, Türkçe и т.д.).\n\n" +
+                    "2. ИНТЕЛЛЕКТ И РЕШЕНИЕ ЗАДАЧ:\n" +
+                    "- Ты эксперт в математике, физике, программировании, логике и анализе данных.\n" +
+                    "- При решении уравнений, задач, математических примеров и научных вопросов давай точные, пошаговые и понятные решения (Step-by-Step).\n" +
+                    "- Всегда четко выделяй итоговый ответ (например: **Ответ: x = 5**).\n" +
+                    "- Пиши чистый и оптимизированный код, если тебя просят решить задачу по программированию.\n\n" +
+                    "3. ОФОРМЛЕНИЕ:\n" +
+                    "Используй форматирование Markdown (списки, жирный шрифт, таблицы, блоки кода), чтобы ответы выглядели аккуратно и легко читались." }]
+            };
+
+            let payload = {
+                contents: sanitizedHistory,
+                systemInstruction: systemInstruction
+            };
+
+            let result = await fetchWithRetry(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }, 2);
+
+            // Auto-Healing: If contextual call fails, retry with fresh single prompt turn
+            if (!result || !result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                console.warn("Full context request failed, retrying with fresh single prompt...");
+                payload = {
+                    contents: [currentTurn],
+                    systemInstruction: systemInstruction
+                };
+                result = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }, 2);
+            }
+
+            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (aiText) {
+                state.conversationHistory.push(currentTurn);
+                state.conversationHistory.push({
+                    role: 'model',
+                    parts: [{ text: aiText }]
+                });
+                return aiText;
+            } else {
+                return "Привет! Я готов к работе. Задай свой вопрос ещё раз!";
+            }
+        }
+
+        // AI Image Generation API with Retries
+        async function generateAIImageAPI(promptText) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-image:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                }
+            };
+
+            const data = await fetchWithRetry(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }, 3);
+
+            const base64Data = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+            if (base64Data) {
+                return `data:image/png;base64,${base64Data}`;
+            }
+            return null;
+        }
+
+        // Audio WAV Helper
+        function pcmToWav(pcm16Data, sampleRate) {
+            const numChannels = 1;
+            const byteRate = sampleRate * numChannels * 2;
+            const blockAlign = numChannels * 2;
+            const dataSize = pcm16Data.length * 2;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            function writeString(offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            let offset = 44;
+            for (let i = 0; i < pcm16Data.length; i++, offset += 2) {
+                view.setInt16(offset, pcm16Data[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        // TTS Voice Synthesis with Retries
+        async function generateTTSAudioAPI(text) {
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: text }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: "Zephyr" }
+                            }
+                        }
+                    }
+                };
+
+                const result = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }, 2);
+
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const base64Audio = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType || "";
+
+                if (base64Audio) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+                    
+                    const binaryString = atob(base64Audio);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const pcm16 = new Int16Array(bytes.buffer);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    return URL.createObjectURL(wavBlob);
+                }
+            } catch (err) {
+                console.error("TTS generation error:", err);
+            }
+            return null;
+        }
+
+        // Helpers
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function formatText(text) {
+            if (typeof marked !== 'undefined') {
+                return marked.parse(text);
+            }
+            let formatted = escapeHtml(text);
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            formatted = formatted.replace(/\n/g, '<br>');
+            return formatted;
+        }
+
+        function clearChatHistory() {
+            state.conversationHistory = [];
+            chatContainer.innerHTML = `
+                <div class="flex items-start gap-3 max-w-[90%]">
+                    <div class="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-sparkles text-purple-400 text-xs"></i>
+                    </div>
+                    <div class="glass-panel rounded-2xl rounded-tl-none p-3.5 text-xs text-slate-200 leading-relaxed border border-slate-800">
+                        История и память диалога очищены. Готов к новым задачам и примерам!
+                    </div>
+                </div>
+            `;
+        }
+
+        // Auto-Scroll helper
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Render AI Loading Placeholder Animation
+        function renderAILoading() {
+            const loadingId = 'loading-' + Date.now();
+            const msgDiv = document.createElement('div');
+            msgDiv.id = loadingId;
+            msgDiv.className = 'flex items-start gap-2.5 max-w-[92%]';
+            msgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-sparkles text-purple-400 text-xs animate-spin"></i>
+                </div>
+                <div class="glass-panel rounded-2xl rounded-tl-none p-3.5 text-xs text-slate-300 border border-slate-800 flex items-center gap-2 shadow-lg">
+                    <div class="flex gap-1.5 items-center">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-bounce"></span>
+                        <span class="w-2 h-2 rounded-full bg-purple-400 animate-bounce [animation-delay:0.2s]"></span>
+                        <span class="w-2 h-2 rounded-full bg-pink-400 animate-bounce [animation-delay:0.4s]"></span>
+                    </div>
+                    <span class="text-[11px] text-slate-400 font-medium">PulseAI думает...</span>
+                </div>
+            `;
+            chatContainer.appendChild(msgDiv);
+            scrollToBottom();
+            return loadingId;
+        }
+
+        // Remove AI Loading Placeholder
+        function removeAILoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+    </script>
+</body>
+</html>
